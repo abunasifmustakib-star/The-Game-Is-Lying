@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101018">
+<title>The Game Is Lying — playable prototype</title>
+<style>
+:root{--bg:#101018;--panel:#1a1a27;--panel2:#242437;--text:#f5f4ff;--muted:#aaa9c3;--pink:#ff4f87;--cyan:#67e8f9;--green:#7df0a8;--yellow:#ffd166}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#27203d 0%,var(--bg) 58%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;display:flex;justify-content:center;padding:18px}
+.app{width:min(100%,680px);margin:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.logo{font-weight:900;letter-spacing:.08em;font-size:12px;color:var(--cyan)}.pill{border:1px solid #45435f;border-radius:99px;padding:7px 11px;color:var(--muted);font-size:12px}
+h1{font-size:clamp(30px,7vw,50px);line-height:.98;letter-spacing:-.045em;margin:10px 0 12px}h1 span{color:var(--pink)}.intro{color:var(--muted);line-height:1.5;margin:0 0 22px}
+.card{background:linear-gradient(160deg,#222235,#171722);border:1px solid #38364f;border-radius:22px;padding:clamp(18px,4vw,28px);box-shadow:0 18px 50px #0005}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:16px}
+.story{font-size:clamp(20px,4vw,27px);font-weight:750;line-height:1.2;margin:0 0 10px}.sub{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 22px}
+.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.choice{min-height:76px;border:1px solid #484660;background:var(--panel2);color:var(--text);font-size:16px;font-weight:750;border-radius:15px;padding:14px;cursor:pointer;transition:transform .12s,border-color .12s,background .12s}.choice:hover{border-color:var(--cyan);transform:translateY(-2px)}.choice:focus-visible,.main:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
+.choice small{display:block;color:var(--muted);font-size:11px;font-weight:500;margin-top:5px}.choice.good{border-color:var(--green);background:#143328}.choice.bad{border-color:var(--pink);background:#3b1b2b}
+.notice{margin-top:15px;min-height:25px;font-size:14px;line-height:1.45;color:var(--yellow)}.bottom{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:18px;color:var(--muted);font-size:12px}.main{border:0;background:var(--pink);color:#170b12;border-radius:99px;padding:12px 19px;font-weight:850;font-size:14px;cursor:pointer}.main.secondary{background:#333149;color:var(--text);border:1px solid #4b4964}.hidden{display:none!important}.progress{height:5px;background:#343246;border-radius:99px;overflow:hidden;margin:18px 0}.bar{height:100%;background:linear-gradient(90deg,var(--pink),var(--cyan));width:0;transition:width .3s}
+.footer{text-align:center;color:#77768f;font-size:11px;margin:18px 0 0;line-height:1.5}
+@media(max-width:420px){body{padding:12px}.choices{grid-template-columns:1fr}.choice{min-height:64px}.top{align-items:flex-start}}
+</style>
+</head>
+<body>
+<main class="app">
+  <div class="top"><div class="logo">A TINY EXPERIMENT IN TRUST</div><div class="pill" id="scorePill">0 / 7 solved</div></div>
+  <h1>THE GAME<br>IS <span>LYING.</span></h1>
+  <p class="intro">A tiny puzzle game about trust. Read the room. Question the instructions. Find the way forward.</p>
+  <div class="progress"><div class="bar" id="bar"></div></div>
+  <section class="card" aria-live="polite">
+    <div class="meta"><span id="levelLabel">LEVEL 1</span><span id="attemptLabel">One room. One trick.</span></div>
+    <p class="story" id="story">The sign says not to touch the green door.</p>
+    <p class="sub" id="sub">One of these choices gets you out. Don't overthink it—but don't trust everything you read.</p>
+    <div class="choices" id="choices"></div>
+    <div class="notice" id="notice" role="status"></div>
+    <div class="bottom"><span id="hint">Hint: the sign may not be honest.</span><button class="main hidden" id="nextBtn">Next room →</button></div>
+  </section>
+  <p class="footer">Prototype 0.1 · No account, no downloads, no AI API needed.<br>Your progress stays in this page while it is open.</p>
+</main>
+<script>
+const levels = [
+ {story:"The sign says: “DO NOT TOUCH THE GREEN DOOR.”",sub:"There are two doors. One is a lie detector.",hint:"The title is a clue. Is the sign helping you?",choices:[["GREEN DOOR","Looks suspicious"],["PINK DOOR","Seems safer"]],answer:0,success:"You ignored the warning. The sign was lying. Nice."},
+ {story:"A voice whispers: “The exit is NOT behind the star.”",sub:"Choose one symbol to check.",hint:"The voice has the same problem as the sign.",choices:[["★ STAR","Bright and suspicious"],["● CIRCLE","Very ordinary"]],answer:0,success:"The star was the exit. The voice tried to mislead you."},
+ {story:"The screen says: “Click the button labelled WRONG.”",sub:"Only one button opens the next room.",hint:"This time, the instruction might be telling the truth.",choices:[["RIGHT","A confident label"],["WRONG","A suspicious label"]],answer:1,success:"Plot twist: sometimes a lie-themed game tells the truth."},
+ {story:"A note reads: “The smallest number is the key.”",sub:"Pick a number. The lock is watching.",hint:"Look for something the note doesn't mention.",choices:[["1","Small"],["7","Lucky"],["0","Smaller than 1"],["9","Large"]],answer:2,success:"Zero is smaller than one. The note was technically honest."},
+ {story:"“Do not press any button,” says the machine.",sub:"The machine needs one answer to continue.",hint:"The machine's warning is the puzzle.",choices:[["DON'T PRESS","Obey"],["PRESS ME","Disobey"],["WAIT","Do nothing"],["CLOSE GAME","Escape"]],answer:1,success:"You pressed a button. The machine's rule was the obstacle."},
+ {story:"Two guards block the way. One always lies. One always tells the truth.",sub:"You can ask one question—but you don't have to. Choose a guard.",hint:"This is a trick room: watch for the game to contradict itself.",choices:[["TRUTH GUARD","“I tell the truth.”"],["LIAR GUARD","“I always lie.”"]],answer:0,success:"You chose the truth guard. But notice: the labels were the only clue."},
+ {story:"FINAL ROOM: “To win, choose the button that does NOT say WIN.”",sub:"Last chance. What do you trust: the instruction, or the label?",hint:"The final room tests whether you learned the pattern—or stopped trusting every instruction.",choices:[["WIN","Too obvious?"],["NOT WIN","The instruction points here"]],answer:1,success:"You escaped! You didn't blindly trust the sign—and you didn't blindly reject it either."}
+];
+let current=0,solved=0,locked=false,attempts=0;
+const $=id=>document.getElementById(id);
+function render(){
+ const l=levels[current];locked=false;attempts=0;
+ $("levelLabel").textContent=`LEVEL ${current+1} / ${levels.length}`;
+ $("attemptLabel").textContent="One room. One trick.";
+ $("story").textContent=l.story;$("sub").textContent=l.sub;$("hint").textContent=l.hint;
+ $("notice").textContent="";$("nextBtn").classList.add("hidden");
+ $("choices").innerHTML="";
+ l.choices.forEach((c,i)=>{const b=document.createElement("button");b.className="choice";b.innerHTML=`${c[0]}<small>${c[1]}</small>`;b.onclick=()=>choose(i,b);$("choices").appendChild(b)});
+ $("scorePill").textContent=`${solved} / ${levels.length} solved`;
+ $("bar").style.width=`${solved/levels.length*100}%`;
+}
+function choose(i,button){
+ if(locked)return;attempts++;const l=levels[current];
+ if(i===l.answer){
+  locked=true;solved++;button.classList.add("good");
+  $("notice").textContent="✓ "+l.success;
+  $("attemptLabel").textContent="ROOM CLEARED";
+  [...$("choices").children].forEach(b=>b.disabled=true);
+  $("nextBtn").classList.remove("hidden");$("nextBtn").textContent=current===levels.length-1?"Play again ↻":"Next room →";
+  $("scorePill").textContent=`${solved} / ${levels.length} solved`;$("bar").style.width=`${solved/levels.length*100}%`;
+ }else{
+  button.classList.add("bad");$("notice").textContent=attempts===1?"✕ Not this one. Look at the wording again.":"✕ Still trapped. Try another choice.";
+  $("attemptLabel").textContent=attempts===1?"A wrong turn":"Keep questioning";
+  setTimeout(()=>{if(!locked)button.classList.remove("bad")},500);
+ }
+}
+$("nextBtn").onclick=()=>{if(current===levels.length-1){current=0;solved=0}else current++;render()};
+render();
+</script>
+</body>
+</html>
